@@ -1,0 +1,56 @@
+body {
+    color: black;
+    margin: 0px auto 0px auto;
+    /*background:url(../images/bgimage.jpg); */
+    -moz-background-size:100% 100%; /* Old Firefox */
+    background-size:100% 100%;
+    background-repeat:no-repeat;
+}
+
+a
+{
+    color: white;
+    height:1px;
+    border:0px;
+    clear:both;
+}
+
+a:hover,a:active {color:#66CCFC; background-color:transparent}
+
+.posthref {
+    color: #945D2C;
+}
+
+div#sidebar {
+    text-align: center;
+    background-color: #945D2C;
+    color: white;
+    float: left;
+    width: 20%; 
+}
+
+div#main {
+    width: 80%;
+}
+#sidebar, #main {
+    display: table-cell;
+}
+
+div#tagsbar {
+    text-align: left;
+    background-color:#945D2C;
+    color: white;
+    padding: 3px 10px 3px 10px;
+    margin: 0px 10px 0px 10px;
+}
+
+div#post {
+    text-align: left;
+    border:1px solid black;
+    padding: 3px 10px 3px 10px;
+    margin: 2px 10px 2px 10px;
+}
+
+h2 {
+    color:#945D2C;  
+}
