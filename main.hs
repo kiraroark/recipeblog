@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes #-}
 module Main where
 
 import Prelude hiding (id)
@@ -16,13 +17,24 @@ import qualified Text.Blaze.Html5.Attributes as A
 import System.FilePath ((</>))
 import Debug.Trace
 
+import Text.Hamlet (shamlet)
+import Text.Blaze.Html.Renderer.String (renderHtml)
+import Data.Char (toLower)
+import Data.List (sort)
+import System.IO
+import Text.ParserCombinators.Parsec
+import Data.String.Utils
+import Data.Maybe
+import System.IO.Unsafe (unsafePerformIO)
+import System.Environment
+import Debug.Trace
+
 -- | Number of article teasers displayed per sorted index page.
 --
 articlesPerIndexPage :: Int
 articlesPerIndexPage = 2
 
-recipeCompiler :: Compiler Resource (Page String)
-recipeCompiler = readPageCompiler >>> addDefaultFields
+
 
 myCompiler :: Compiler () (Page String)
 myCompiler = undefined
@@ -40,7 +52,7 @@ main = hakyll $ do
             
     -- Render posts
     group "index" $ do
-        match "posts/*.html" $ do
+        match "posts/*.txt" $ do
             --route $ idRoute
             compile $ recipeCompiler
                 >>> arr (renderDateField "date" "%B %e, %Y" "Date unknown")      
@@ -56,7 +68,7 @@ main = hakyll $ do
                 >>> relativizeUrlsCompiler      
             
     group "seperate" $ do
-         match "posts/*.html"  $ do
+         match "posts/*.txt"  $ do
             route $ (setExtension ".html") -- composeRoutes (setExtension ".html") (gsubRoute "posts/" (\_ -> "recipes/"))
             compile $ recipeCompiler
                 >>> arr (renderDateField "date" "%B %e, %Y" "Date unknown")  
@@ -231,3 +243,102 @@ indexNavLink n d maxn = renderHtml ref
                   else case (n + d) of
                     1 -> "pages/index.html"
                     _ -> "pages/index" ++ (show $ n + d) ++ ".html" 
+
+
+data Recipe = Recipe
+    { metadata :: String
+	, summary :: String
+	, picture :: String
+	, result  :: String
+	, prep    :: String
+	, cook    :: String
+	, total   :: String
+	, ingredientBlock  :: [SubSection]
+	, instructionBlock :: [SubSection]
+    } deriving Show
+
+data SubSection = SubSection 
+	{ name	    :: String
+	, content	:: [String]
+	} deriving Show
+
+type PureString = String
+
+type HtmlString = String
+                                
+createRecipe :: PureString -> Maybe Recipe
+createRecipe fileStr = case parse parseRecipe " " fileStr of
+                            Left _ -> Nothing
+                            Right recipe -> Just recipe
+
+recipeToHtml :: Maybe Recipe -> HtmlString
+recipeToHtml maybeRecipe = let recipe = fromJust maybeRecipe in renderHtml [shamlet|
+#{metadata recipe}
+<p class="summary">#{result recipe}
+<p>
+ Prep time: 
+  <span class="preptime"><span class="value-title" title=#{(++) "PT" (replace " " "" $ replace "hour" "H" $ replace "min" "M" $ prep recipe)}></span>#{prep recipe}
+ <br>
+ Cook time: 
+  <span class="cooktime"><span class="value-title" title=#{(++) "PT" (replace " " "" $ replace "hour" "H" $ replace "min" "M" $ cook recipe)}></span>#{cook recipe}
+ <br>
+ Total time: 
+  <span class="duration"><span class="value-title" title=#{(++) "PT" (replace " " "" $ replace "hour" "H" $ replace "min" "M" $ total recipe)}></span>#{total recipe}
+ <br>
+<p>   
+ <h3>Ingredients
+ $forall subSectionIng <- (ingredientBlock recipe)
+  <h4>#{(name subSectionIng)}
+  <ul>
+   $forall lineIng <- (content subSectionIng)
+    <li>
+     <span class="ingredient">
+      <span class="name">#{head (split " - " lineIng)} </span> - <span class="amount">#{last (split " - " lineIng)}      
+<p> 
+ <h3>Instructions
+ <span class="instructions">
+  $forall subSectionIns <- (instructionBlock recipe)
+   <h4>#{(name subSectionIns)}
+   <ul>
+    $forall lineIns <- (content subSectionIns)
+     <li>#{lineIns} 
+|]
+
+-- createRecipeArrow :: Compiler PureString (Maybe Recipe)
+-- createRecipeArrow = arr createRecipe
+-- 
+-- recipeToHtmlArrow :: Compiler (Maybe Recipe) HtmlString
+-- recipeToHtmlArrow = arr recipeToHtml
+
+recipeCompiler :: Compiler Resource (Page String)
+recipeCompiler = (getResourceString >>> arr createRecipe >>> arr recipeToHtml >>^ readPage) >>> addDefaultFields
+
+createSections :: String -> Maybe [SubSection]
+createSections inputStr = case parse parseSections " " inputStr of
+								 Left err ->  trace (show err) $ Nothing
+								 Right subSections -> Just subSections
+
+parseSections :: Parser [SubSection]
+parseSections = many1 $ do 
+				  string "#"
+				  name <- manyTill anyChar (try (newline))
+				  content <- manyTill anyChar (try (string "@"))
+				  newline
+				  return (SubSection name (lines content))
+
+parseRecipe :: Parser Recipe
+parseRecipe = do
+				 metadata <- manyTill anyChar (try (string "*Summary*"))
+				 summary <- manyTill anyChar (try (string "*Picture*"))
+				 picture <- manyTill anyChar (try (string "*Result*"))
+				 result <- manyTill anyChar (try (string "*Prep*"))
+				 prep <- manyTill anyChar (try (string "*Cook*"))
+				 cook <- manyTill anyChar (try (string "*Total*"))
+				 total <- manyTill anyChar (try (string "*Ingredients*"))
+				 newline
+				 ingredientBlock <- manyTill anyChar (try (string "*Instructions*"))
+				 newline
+				 instructionBlock <- manyTill anyChar (try eof)
+				 return (Recipe metadata summary picture result prep cook total (fromMaybe [] (createSections ingredientBlock)) (fromMaybe [] (createSections instructionBlock)))
+                
+                					
