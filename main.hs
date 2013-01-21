@@ -235,7 +235,7 @@ makeIndexPage n maxn posts =
 indexNavLink :: Int -> Int -> Int -> String
 indexNavLink n d maxn = renderHtml ref
   where ref = if (refPage == "") then ""
-              else H.a ! A.href (toValue $ toUrl $ refPage) $ 
+              else H.a ! A.class_ "navlink" ! A.href (toValue $ toUrl $ refPage) $ 
                    (H.preEscapedToMarkup lab)
         lab :: String
         lab = if (d > 0) then "&laquo; OLDER POSTS" else "NEWER POSTS &raquo;"
@@ -243,7 +243,6 @@ indexNavLink n d maxn = renderHtml ref
                   else case (n + d) of
                     1 -> "pages/index.html"
                     _ -> "pages/index" ++ (show $ n + d) ++ ".html" 
-
 
 data Recipe = Recipe
     { metadata :: String
@@ -293,15 +292,22 @@ recipeToHtml maybeRecipe = let recipe = fromJust maybeRecipe in renderHtml [sham
    $forall lineIng <- (content subSectionIng)
     <li>
      <span class="ingredient">
-      <span class="name">#{head (split " - " lineIng)} </span> - <span class="amount">#{last (split " - " lineIng)}      
-<p> 
+     $if (length (split " - " lineIng) == 1)
+      <span class="name">#{lineIng}
+     $else
+      <span class="name">#{head (split " - " lineIng)} </span> - <span class="amount">#{last (split " - " lineIng)}
+<p>
  <h3>Instructions
  <span class="instructions">
   $forall subSectionIns <- (instructionBlock recipe)
    <h4>#{(name subSectionIns)}
    <ul>
     $forall lineIns <- (content subSectionIns)
-     <li>#{lineIns} 
+     $if (startswith "image:" lineIns)
+      <figure>
+       <img src=#{(++) "/images/" (last (split "image:" lineIns))} alt=#{last (split "*image:" lineIns)}>
+     $else
+      <li>#{lineIns}
 |]
 
 -- createRecipeArrow :: Compiler PureString (Maybe Recipe)
