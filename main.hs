@@ -247,8 +247,7 @@ indexNavLink n d maxn = renderHtml ref
 data Recipe = Recipe
     { metadata :: String
 	, summary :: String
-	, picture :: String
-	, result  :: String
+	, pictures :: [String]
 	, prep    :: String
 	, cook    :: String
 	, total   :: String
@@ -298,9 +297,8 @@ parseSections = many1 $ do
 parseRecipe :: Parser Recipe
 parseRecipe = do
 				 metadata <- manyTill anyChar (try (string "*Summary*"))
-				 summary <- manyTill anyChar (try (string "*Picture*"))
-				 picture <- manyTill anyChar (try (string "*Result*"))
-				 result <- manyTill anyChar (try (string "*Prep*"))
+				 summary <- manyTill anyChar (try (string "*Pictures*"))
+				 pictures <- manyTill anyChar (try (string "*Prep*"))
 				 prep <- manyTill anyChar (try (string "*Cook*"))
 				 cook <- manyTill anyChar (try (string "*Total*"))
 				 total <- manyTill anyChar (try (string "*Ingredients*"))
@@ -308,6 +306,6 @@ parseRecipe = do
 				 ingredientBlock <- manyTill anyChar (try (string "*Instructions*"))
 				 newline
 				 instructionBlock <- manyTill anyChar (try eof)
-				 return (Recipe metadata summary picture result prep cook total (fromMaybe [] (createSections ingredientBlock)) (fromMaybe [] (createSections instructionBlock)))
+				 return (Recipe metadata summary (lines pictures) prep cook total (fromMaybe [] (createSections ingredientBlock)) (fromMaybe [] (createSections instructionBlock)))
                 
                 					
