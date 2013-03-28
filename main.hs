@@ -60,12 +60,12 @@ main = hakyll $ do
                 >>> applyTemplateCompiler "templates/post.html"
                 >>> relativizeUrlsCompiler
                 
-        match "posts/*.markdown" $ do
-            compile $ pageCompiler
-                >>> arr (renderDateField "date" "%B %e, %Y" "Date unknown")      
-                >>> renderTagsField "prettytags" (fromCapture "tags/*")
-                >>> applyTemplateCompiler "templates/post.html"
-                >>> relativizeUrlsCompiler      
+        -- match "posts/*.markdown" $ do
+--             compile $ pageCompiler
+--                 >>> arr (renderDateField "date" "%B %e, %Y" "Date unknown")      
+--                 >>> renderTagsField "prettytags" (fromCapture "tags/*")
+--                 >>> applyTemplateCompiler "templates/post.html"
+--                 >>> relativizeUrlsCompiler      
             
     group "seperate" $ do
          match "posts/*.txt"  $ do
@@ -78,15 +78,15 @@ main = hakyll $ do
                 >>> applyTemplateCompiler "templates/default.html"                                
                 >>> relativizeUrlsCompiler
                 
-         match "posts/*.markdown" $ do
-            route   $ setExtension ".html"
-            compile $ pageCompiler
-                >>> arr (renderDateField "date" "%B %e, %Y" "Date unknown")      
-                >>> renderTagsField "prettytags" (fromCapture "tags/*")
-                >>> applyTemplateCompiler "templates/post.html"
-                >>> requireA "tags" (setFieldA "tagcloud" (renderTagCloud'))
-                >>> applyTemplateCompiler "templates/default.html"                                
-                >>> relativizeUrlsCompiler
+         -- match "posts/*.markdown" $ do
+--             route   $ setExtension ".html"
+--             compile $ pageCompiler
+--                 >>> arr (renderDateField "date" "%B %e, %Y" "Date unknown")      
+--                 >>> renderTagsField "prettytags" (fromCapture "tags/*")
+--                 >>> applyTemplateCompiler "templates/post.html"
+--                 >>> requireA "tags" (setFieldA "tagcloud" (renderTagCloud'))
+--                 >>> applyTemplateCompiler "templates/default.html"                                
+--                 >>> relativizeUrlsCompiler
                 
                     
     -- -- Index
