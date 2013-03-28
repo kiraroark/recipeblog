@@ -26,7 +26,8 @@ div#sidebar {
     background-color: #945D2C;
     color: white;
     float: left;
-    width: 20%; 
+    width: 20%;
+    height: 300px;
 }
 
 div#main {
