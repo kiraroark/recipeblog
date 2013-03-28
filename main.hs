@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE TemplateHaskell #-}
 module Main where
 
 import Prelude hiding (id)
@@ -17,7 +17,7 @@ import qualified Text.Blaze.Html5.Attributes as A
 import System.FilePath ((</>))
 import Debug.Trace
 
-import Text.Hamlet (shamlet)
+import Text.Hamlet (shamlet,shamletFile)
 import Text.Blaze.Html.Renderer.String (renderHtml)
 import Data.Char (toLower)
 import Data.List (sort)
@@ -271,44 +271,7 @@ createRecipe fileStr = case parse parseRecipe " " fileStr of
                             Right recipe -> Just recipe
 
 recipeToHtml :: Maybe Recipe -> HtmlString
-recipeToHtml maybeRecipe = let recipe = fromJust maybeRecipe in renderHtml [shamlet|
-#{metadata recipe}
-<p class="summary">#{result recipe}
-<p>
- Prep time: 
-  <span class="preptime"><span class="value-title" title=#{(++) "PT" (replace " " "" $ replace "hour" "H" $ replace "min" "M" $ prep recipe)}></span>#{prep recipe}
- <br>
- Cook time: 
-  <span class="cooktime"><span class="value-title" title=#{(++) "PT" (replace " " "" $ replace "hour" "H" $ replace "min" "M" $ cook recipe)}></span>#{cook recipe}
- <br>
- Total time: 
-  <span class="duration"><span class="value-title" title=#{(++) "PT" (replace " " "" $ replace "hour" "H" $ replace "min" "M" $ total recipe)}></span>#{total recipe}
- <br>
-<p>   
- <h3>Ingredients
- $forall subSectionIng <- (ingredientBlock recipe)
-  <h4>#{(name subSectionIng)}
-  <ul>
-   $forall lineIng <- (content subSectionIng)
-    <li>
-     <span class="ingredient">
-     $if (length (split " - " lineIng) == 1)
-      <span class="name">#{lineIng}
-     $else
-      <span class="name">#{head (split " - " lineIng)} </span> - <span class="amount">#{last (split " - " lineIng)}
-<p>
- <h3>Instructions
- <span class="instructions">
-  $forall subSectionIns <- (instructionBlock recipe)
-   <h4>#{(name subSectionIns)}
-   <ul>
-    $forall lineIns <- (content subSectionIns)
-     $if (startswith "image:" lineIns)
-      <figure>
-       <img src=#{(++) "/images/" (last (split "image:" lineIns))} alt=#{last (split "*image:" lineIns)}>
-     $else
-      <li>#{lineIns}
-|]
+recipeToHtml maybeRecipe = let recipe = fromJust maybeRecipe in renderHtml $(shamletFile "recipe.hamlet")
 
 -- createRecipeArrow :: Compiler PureString (Maybe Recipe)
 -- createRecipeArrow = arr createRecipe
