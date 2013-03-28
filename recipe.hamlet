@@ -1,0 +1,41 @@
+#{metadata recipe}
+<p class="summary">#{summary recipe}
+<p>
+ $forall pic <- (pictures recipe)
+  $if (startswith "image:" pic)
+   <figure>
+    <img src=#{(++) "/images/" (last (split "image:" pic))} alt=#{last (split "*image:" pic)}>
+<p>
+ Prep time: 
+  <span class="preptime"><span class="value-title" title=#{(++) "PT" (replace " " "" $ replace "hour" "H" $ replace "min" "M" $ prep recipe)}></span>#{prep recipe}
+ <br>
+ Cook time: 
+  <span class="cooktime"><span class="value-title" title=#{(++) "PT" (replace " " "" $ replace "hour" "H" $ replace "min" "M" $ cook recipe)}></span>#{cook recipe}
+ <br>
+ Total time: 
+  <span class="duration"><span class="value-title" title=#{(++) "PT" (replace " " "" $ replace "hour" "H" $ replace "min" "M" $ total recipe)}></span>#{total recipe}
+ <br>
+<p>   
+ <h3>Ingredients
+ $forall subSectionIng <- (ingredientBlock recipe)
+  <h4>#{(name subSectionIng)}
+  <ul>
+   $forall lineIng <- (content subSectionIng)
+    <li>
+     <span class="ingredient">
+     $if (length (split " - " lineIng) == 1)
+      <span class="name">#{lineIng}
+     $else
+      <span class="name">#{head (split " - " lineIng)} </span> - <span class="amount">#{last (split " - " lineIng)}
+<p>
+ <h3>Instructions
+ <span class="instructions">
+  $forall subSectionIns <- (instructionBlock recipe)
+   <h4>#{(name subSectionIns)}
+   <ul>
+    $forall lineIns <- (content subSectionIns)
+     $if (startswith "image:" lineIns)
+      <figure>
+       <img src=#{(++) "/images/" (last (split "image:" lineIns))} alt=#{last (split "*image:" lineIns)}>
+     $else
+      <li>#{lineIns}
