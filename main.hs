@@ -3,29 +3,21 @@
 module Main where
 
 import Prelude hiding (id)
-import Control.Arrow ((>>>), (***), (&&&), arr, (>>^))
-import Control.Category (id)
-import Data.Monoid (mempty, mconcat, mappend)
+import Control.Arrow ((>>>), arr, (>>^))
+import Data.Monoid (mempty, mconcat)
 
 import Hakyll
 
-import Data.Maybe (isNothing)
-import Text.Blaze.Html.Renderer.String (renderHtml)
 import Text.Blaze ((!), toValue)
 import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
 import System.FilePath ((</>))
 import Debug.Trace
 
-import Text.Hamlet (shamlet,shamletFile)
+import Text.Hamlet (shamletFile)
 import Text.Blaze.Html.Renderer.String (renderHtml)
-import Data.Char (toLower)
-import Data.List (sort)
-import System.IO
 import Data.String.Utils
 import Data.Maybe
-import System.IO.Unsafe (unsafePerformIO)
-import System.Environment
 
 import RecipeParser
 
@@ -139,7 +131,7 @@ makeTagList tag posts =
 
 -- Split list into equal sized sublists.
 chunk :: Int -> [a] -> [[a]]
-chunk n [] = []
+chunk _ [] = []
 chunk n xs = ys : chunk n zs
   where (ys,zs) = splitAt n xs   
    
@@ -147,18 +139,18 @@ chunk n xs = ys : chunk n zs
 -- the appropriate posts on each one.
 makeIndexPages :: [[Page String]] -> 
                   [(Identifier (Page String), Compiler () (Page String))]
-makeIndexPages ps = map doOne (zip [maxn,maxn-1..1] ps)
+makeIndexPages pageString = map doOne (zip [maxn,maxn-1..1] pageString)
   where doOne (n, ps) = (indexIdentifier n, makeIndexPage n maxn ps)
         maxn = nposts `div` articlesPerIndexPage +
                if (nposts `mod` articlesPerIndexPage /= 0) then 1 else 0
-        nposts = sum $ map length ps
+        nposts = sum $ map length pageString
         indexIdentifier n = parseIdentifier url
           where url = "index" ++ (if (n == 1) then "" else show n) ++ ".html" 
 
 
 -- Creates an index page: inserts posts, sets up navigation links
 -- to older and newer article index pages, applies templates.
--- makeIndexPage :: Int -> Int -> [Page String] -> Compiler () (Page String)
+makeIndexPage :: Int -> Int -> [Page String] -> Compiler a (Page String)
 makeIndexPage n maxn posts = 
   constA (mempty, posts)
   >>> allPosts
@@ -189,5 +181,4 @@ recipeToHtml maybeRecipe = let recipe = fromJust maybeRecipe in renderHtml $(sha
 
 recipeCompiler :: Compiler Resource (Page String)
 recipeCompiler = (getResourceString >>> arr createRecipe >>> arr recipeToHtml >>^ readPage) >>> addDefaultFields
-
               
