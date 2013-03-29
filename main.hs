@@ -187,12 +187,6 @@ indexNavLink n d maxn = renderHtml ref
 recipeToHtml :: Maybe Recipe -> HtmlString
 recipeToHtml maybeRecipe = let recipe = fromJust maybeRecipe in renderHtml $(shamletFile "recipe.hamlet")
 
--- createRecipeArrow :: Compiler PureString (Maybe Recipe)
--- createRecipeArrow = arr createRecipe
--- 
--- recipeToHtmlArrow :: Compiler (Maybe Recipe) HtmlString
--- recipeToHtmlArrow = arr recipeToHtml
-
 recipeCompiler :: Compiler Resource (Page String)
 recipeCompiler = (getResourceString >>> arr createRecipe >>> arr recipeToHtml >>^ readPage) >>> addDefaultFields
 
