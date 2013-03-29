@@ -22,12 +22,12 @@ import Text.Blaze.Html.Renderer.String (renderHtml)
 import Data.Char (toLower)
 import Data.List (sort)
 import System.IO
-import Text.ParserCombinators.Parsec
 import Data.String.Utils
 import Data.Maybe
 import System.IO.Unsafe (unsafePerformIO)
 import System.Environment
-import Debug.Trace
+
+import RecipeParser
 
 -- Number of posts in a page.
 articlesPerIndexPage :: Int
@@ -184,31 +184,6 @@ indexNavLink n d maxn = renderHtml ref
                     1 -> "pages/index.html"
                     _ -> "pages/index" ++ (show $ n + d) ++ ".html" 
 
-data Recipe = Recipe
-    { metadata :: String
-	, summary :: String
-	, pictures :: [String]
-	, prep    :: String
-	, cook    :: String
-	, total   :: String
-	, ingredientBlock  :: [SubSection]
-	, instructionBlock :: [SubSection]
-    } deriving Show
-
-data SubSection = SubSection 
-	{ name	    :: String
-	, content	:: [String]
-	} deriving Show
-
-type PureString = String
-
-type HtmlString = String
-                                
-createRecipe :: PureString -> Maybe Recipe
-createRecipe fileStr = case parse parseRecipe " " fileStr of
-                            Left _ -> Nothing
-                            Right recipe -> Just recipe
-
 recipeToHtml :: Maybe Recipe -> HtmlString
 recipeToHtml maybeRecipe = let recipe = fromJust maybeRecipe in renderHtml $(shamletFile "recipe.hamlet")
 
@@ -221,30 +196,4 @@ recipeToHtml maybeRecipe = let recipe = fromJust maybeRecipe in renderHtml $(sha
 recipeCompiler :: Compiler Resource (Page String)
 recipeCompiler = (getResourceString >>> arr createRecipe >>> arr recipeToHtml >>^ readPage) >>> addDefaultFields
 
-createSections :: String -> Maybe [SubSection]
-createSections inputStr = case parse parseSections " " inputStr of
-								 Left err ->  trace (show err) $ Nothing
-								 Right subSections -> Just subSections
-
-parseSections :: Parser [SubSection]
-parseSections = many1 $ do 
-				  string "#"
-				  name <- manyTill anyChar (try (newline))
-				  content <- manyTill anyChar (try (string "@"))
-				  newline
-				  return (SubSection name (lines content))
-
-parseRecipe :: Parser Recipe
-parseRecipe = do
-				 metadata <- manyTill anyChar (try (string "*Summary*"))
-				 summary <- manyTill anyChar (try (string "*Pictures*"))
-				 pictures <- manyTill anyChar (try (string "*Prep*"))
-				 prep <- manyTill anyChar (try (string "*Cook*"))
-				 cook <- manyTill anyChar (try (string "*Total*"))
-				 total <- manyTill anyChar (try (string "*Ingredients*"))
-				 newline
-				 ingredientBlock <- manyTill anyChar (try (string "*Instructions*"))
-				 newline
-				 instructionBlock <- manyTill anyChar (try eof)
-				 return (Recipe metadata summary (lines pictures) prep cook total (fromMaybe [] (createSections ingredientBlock)) (fromMaybe [] (createSections instructionBlock)))
-                 
+              
