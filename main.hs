@@ -37,36 +37,36 @@ main = hakyll $ do
         compile copyFileCompiler
             
     -- Render posts
-    group "index" $ do
-        match "posts/*.txt" $ do
+    group "index" $
+        match "posts/*.txt" $
             compile $ recipeCompiler
                 >>> arr (renderDateField "date" "%B %e, %Y" "Date unknown")      
                 >>> renderTagsField "prettytags" (fromCapture "tags/*")
                 >>> applyTemplateCompiler "templates/post.html"
                 >>> relativizeUrlsCompiler
                 
-    group "seperate" $ do
-         match "posts/*.txt"  $ do
-            route $ (setExtension ".html")
+    group "seperate" $
+         match "posts/*.txt" $ do
+            route (setExtension ".html")
             compile $ recipeCompiler
                 >>> arr (renderDateField "date" "%B %e, %Y" "Date unknown")  
                 >>> renderTagsField "prettytags" (fromCapture "tags/*")
                 >>> applyTemplateCompiler "templates/post.html"
-                >>> requireA "tags" (setFieldA "tagcloud" (renderTagCloud'))
+                >>> requireA "tags" (setFieldA "tagcloud" renderTagCloud')
                 >>> applyTemplateCompiler "templates/default.html"                                
                 >>> relativizeUrlsCompiler
                 
     -- Index
-    match "index*.html" $ route $ customRoute (\i -> "pages" </> trace ("routing: " ++ (show i)) (toFilePath i) ) 
+    match "index*.html" $ route $ customRoute (\i -> "pages" </> trace ("routing: " ++ show i) (toFilePath i) ) 
     metaCompile $ requireAll_ (inGroup (Just "index"))
         >>> arr (chunk articlesPerIndexPage)
-        >>^ (makeIndexPages)
+        >>^ makeIndexPages
         
     -- About
     match "about.html" $ route idRoute
     create "about.html" $ constA mempty
         >>> arr (setField "title" "About")
-        >>> requireA "tags" (setFieldA "tagcloud" (renderTagCloud'))
+        >>> requireA "tags" (setFieldA "tagcloud" renderTagCloud')
         >>> applyTemplateCompiler "templates/about.html"
         >>> applyTemplateCompiler "templates/default.html"
         >>> relativizeUrlsCompiler
@@ -75,8 +75,8 @@ main = hakyll $ do
     match "postlist.html" $ route idRoute
     create "postlist.html" $ constA mempty
         >>> arr (setField "title" "All Posts")
-        >>> requireA "tags" (setFieldA "tagcloud" (renderTagCloud'))
-        >>> requireAllA (inGroup (Just "seperate")) (addPostList)
+        >>> requireA "tags" (setFieldA "tagcloud" renderTagCloud')
+        >>> requireAllA (inGroup (Just "seperate")) addPostList
         >>> applyTemplateCompiler "templates/postlist.html"
         >>> applyTemplateCompiler "templates/default.html"
         >>> relativizeUrlsCompiler
@@ -124,7 +124,7 @@ makeTagList tag posts =
     constA (mempty, posts)
         >>> allPosts
         >>> arr (setField "title" ("Posts tagged &#8216;" ++ tag ++ "&#8217;"))
-        >>> requireA "tags" (setFieldA "tagcloud" (renderTagCloud'))
+        >>> requireA "tags" (setFieldA "tagcloud" renderTagCloud')
         >>> applyTemplateCompiler "templates/posts.html"
         >>> applyTemplateCompiler "templates/default.html"
         >>> relativizeUrlsCompiler
@@ -139,13 +139,13 @@ chunk n xs = ys : chunk n zs
 -- the appropriate posts on each one.
 makeIndexPages :: [[Page String]] -> 
                   [(Identifier (Page String), Compiler () (Page String))]
-makeIndexPages pageString = map doOne (zip [maxn,maxn-1..1] pageString)
+makeIndexPages pageString = zipWith (curry doOne) [maxn, maxn - 1 .. 1] pageString
   where doOne (n, ps) = (indexIdentifier n, makeIndexPage n maxn ps)
         maxn = nposts `div` articlesPerIndexPage +
-               if (nposts `mod` articlesPerIndexPage /= 0) then 1 else 0
+               if nposts `mod` articlesPerIndexPage /= 0 then 1 else 0
         nposts = sum $ map length pageString
         indexIdentifier n = parseIdentifier url
-          where url = "index" ++ (if (n == 1) then "" else show n) ++ ".html" 
+          where url = "index" ++ (if n == 1 then "" else show n) ++ ".html" 
 
 
 -- Creates an index page: inserts posts, sets up navigation links
@@ -166,15 +166,15 @@ makeIndexPage n maxn posts =
 -- Generate navigation link HTML for stepping between index pages.
 indexNavLink :: Int -> Int -> Int -> String
 indexNavLink n d maxn = renderHtml ref
-  where ref = if (refPage == "") then ""
-              else H.a ! A.class_ "navlink" ! A.href (toValue $ toUrl $ refPage) $ 
-                   (H.preEscapedToMarkup lab)
+  where ref = if refPage == "" then ""
+              else H.a ! A.class_ "navlink" ! A.href (toValue $ toUrl refPage) $ 
+                   H.preEscapedToMarkup lab
         lab :: String
-        lab = if (d > 0) then "&laquo; OLDER POSTS" else "NEWER POSTS &raquo;"
-        refPage = if (n + d < 1 || n + d > maxn) then ""
-                  else case (n + d) of
+        lab = if d > 0 then "&laquo; OLDER POSTS" else "NEWER POSTS &raquo;"
+        refPage = if n + d < 1 || n + d > maxn then ""
+                  else case n + d of
                     1 -> "pages/index.html"
-                    _ -> "pages/index" ++ (show $ n + d) ++ ".html" 
+                    _ -> "pages/index" ++ show (n + d) ++ ".html" 
 
 recipeToHtml :: Maybe Recipe -> HtmlString
 recipeToHtml maybeRecipe = let recipe = fromJust maybeRecipe in renderHtml $(shamletFile "recipe.hamlet")
